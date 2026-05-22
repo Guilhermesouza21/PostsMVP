@@ -148,14 +148,7 @@ const LoginPage = () => {
             </div>
           </form>
 
-          <div className={styles['login-footer']}>
-            <button
-              className={styles['btn-home']}
-              onClick={() => navigate("/")}
-            >
-              ← Voltar para Home
-            </button>
-          </div>
+     
         </div>
       </main>
     </div>

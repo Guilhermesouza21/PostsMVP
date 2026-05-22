@@ -1,25 +1,40 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import HomePage from "./pages/home";
-import LoginPage from "./pages/login";
-import RegisterPage from "./pages/register";
-import ProfilePage from "./pages/profile";
+import HomePage from "./pages/Home";
+import LoginPage from "./pages/Login";
+import RegisterPage from "./pages/Register";
+import ProfilePage from "./pages/Profile";
 import EditProfilePage from "./pages/edit-profile";
 
 import ProtectedRoute from "./pages/ProtectedRoute";
 import AuthRedirect from "./pages/AuthRedirect";
+import { PublicRoute } from "./pages/PublicRoute";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* 🔥 rota raiz inteligente */}
         <Route path="/" element={<AuthRedirect />} />
 
-        {/* 🔓 públicas */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* 🔓 públicas protegidas contra usuário logado */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <RegisterPage />
+            </PublicRoute>
+          }
+        />
 
         {/* 🔒 privadas */}
         <Route

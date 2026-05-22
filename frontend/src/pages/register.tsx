@@ -192,14 +192,7 @@ const RegisterPage = () => {
             </div>
           </form>
 
-          <div className="register-footer">
-            <button
-              className="btn-home"
-              onClick={() => navigate("/")}
-            >
-              ← Voltar para Home
-            </button>
-          </div>
+
         </div>
       </main>
     </div>
