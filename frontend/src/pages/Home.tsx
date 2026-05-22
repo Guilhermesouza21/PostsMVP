@@ -42,7 +42,7 @@ export default function Home() {
   // 👤 user profile
   useEffect(() => {
     if (!token) return;
-    fetch("http://localhost:3333/user/profile", {
+    fetch("https://postsmvp.onrender.com/user/profile", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
