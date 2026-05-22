@@ -16,7 +16,7 @@ const LoginPage = () => {
     setErrorType("");
 
     try {
-      const res = await fetch(" https://postsmvp.onrender.com/login", {
+      const res = await fetch("https://postsmvp.onrender.com/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
