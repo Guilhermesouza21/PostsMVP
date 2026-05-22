@@ -10,9 +10,7 @@ const LoginPage = () => {
   const [errorType, setErrorType] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API =
-    
-    import.meta.env.VITE_API_URL;
+const API = "https://postsmvp.onrender.com";
 
   const handleLogin = async () => {
     setLoading(true);
