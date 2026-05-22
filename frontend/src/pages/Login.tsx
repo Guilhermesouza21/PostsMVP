@@ -10,13 +10,17 @@ const LoginPage = () => {
   const [errorType, setErrorType] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const API =
+    
+    import.meta.env.VITE_API_URL;
+
   const handleLogin = async () => {
     setLoading(true);
     setMessage("");
     setErrorType("");
 
     try {
-      const res = await fetch("https://postsmvp.onrender.com/auth/login", {
+      const res = await fetch(`${API}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

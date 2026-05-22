@@ -39,10 +39,15 @@ export default function Home() {
 
   const [token] = useState(() => localStorage.getItem("token"));
 
+  const API =
+    
+    import.meta.env.VITE_API_URL;
+
+
   // 👤 user profile
   useEffect(() => {
     if (!token) return;
-    fetch("https://postsmvp.onrender.com/user/profile", {
+    fetch(`${API}/user/profile`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
