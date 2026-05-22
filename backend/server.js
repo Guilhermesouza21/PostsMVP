@@ -18,9 +18,10 @@ const userRoutes = require('./routes/user');
 
 const app = express();
 
-// 🔐 Middlewares
 app.use(cors({
-  origin: "https://myp-lyart.vercel.app"  //eu mudei aqui
+  origin: "https://myp-lyart.vercel.app",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 app.use(helmet({
