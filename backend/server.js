@@ -9,6 +9,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
+const fs = require('fs');
 
 // Rotas
 const postsRoutes = require('./routes/posts');
@@ -17,8 +18,7 @@ const userRoutes = require('./routes/user');
 
 const app = express();
 
-// 🔐 Middlewares (ordem correta)
-
+// 🔐 Middlewares
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE"]
@@ -30,8 +30,14 @@ app.use(helmet({
 
 app.use(express.json());
 
-// 📁 arquivos estáticos (uploads)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// 📁 garantir pasta uploads (IMPORTANTE no Render)
+const uploadsPath = path.join(__dirname, 'uploads');
+
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath);
+}
+
+app.use('/uploads', express.static(uploadsPath));
 
 // 🧭 rotas
 app.use('/auth', authRoutes);
