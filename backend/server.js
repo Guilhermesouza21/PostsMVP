@@ -20,8 +20,7 @@ const app = express();
 
 // 🔐 Middlewares
 app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE"]
+  origin: "https://myp-mj1bsg4pn-guilhermesouzasantosxd-3443s-projects.vercel.app"  //eu mudei aqui
 }));
 
 app.use(helmet({
