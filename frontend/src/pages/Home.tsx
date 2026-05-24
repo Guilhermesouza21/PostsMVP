@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Header from "../components/header";
-
+import API from "../api"; //api
 
 interface User {
   id: number;
@@ -39,9 +39,7 @@ export default function Home() {
 
   const [token] = useState(() => localStorage.getItem("token"));
 
-  const API =
-    
-    import.meta.env.VITE_API_URL;
+  
 
 
   // 👤 user profile
