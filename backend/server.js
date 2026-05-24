@@ -19,10 +19,7 @@ const userRoutes = require('./routes/user');
 const app = express();
 
 app.use(cors({
-  origin: [
-    "https://myp-lyart.vercel.app",
-    "https://my-repo-seven-beta-54.vercel.app"
-  ],
+  origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
