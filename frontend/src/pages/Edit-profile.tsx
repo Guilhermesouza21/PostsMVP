@@ -2,7 +2,9 @@
   import { useNavigate } from "react-router-dom";
   import styles from "../styles/edit-profile.module.css";
   import API from "../api";
+  import { getImageUrl } from "../utils/getImageUrl";
 
+  
   interface User {
     name: string;
     bio: string;
@@ -10,17 +12,7 @@
     email?: string;
   }
 
-const getImageUrl = (path: string) => {
-  if (!path || path === "") {
-    return "/default-avatar.png";
-  }
 
-  if (path.startsWith("http")) {
-    return path;
-  }
-
-  return `${API}${path}`;
-};
 
 
 
@@ -264,8 +256,8 @@ const getImageUrl = (path: string) => {
               <div
                 className={styles["avatar-preview"]}
               >
-                <img
-  src={getImageUrl(previewUrl)}
+               <img
+  src={previewUrl || "/default-avatar.png"}
   alt="Avatar"
   className={styles["preview-img"]}
 />
