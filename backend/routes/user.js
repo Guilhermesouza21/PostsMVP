@@ -113,7 +113,7 @@ router.post('/avatar', auth, (req, res) => {
 
     console.log('✅ Upload realizado:', req.file.filename);
 
-    const avatarUrl = `http://localhost:3333/uploads/avatars/${req.file.filename}`;
+    const avatarUrl =  `/uploads/avatars/${req.file.filename}`;
     
     return res.json({ url: avatarUrl });
   });
