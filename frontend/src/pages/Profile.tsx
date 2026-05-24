@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "../styles/profile.module.css";
 import API from "../api";
+import { getImageUrl } from "../utils/getImageUrl";
 
 interface User {
   name: string;
@@ -107,14 +108,11 @@ const ProfilePage = () => {
         {/* SIDEBAR */}
         <aside className={styles["profile-sidebar"]}>
           <div className={styles["photo-card"]}>
-            <img
-              src={
-                user.avatar_url ||
-                "https://via.placeholder.com/200"
-              }
-              alt={user.name}
-              className={styles.avatar}
-            />
+     <img
+  src={getImageUrl(user.avatar_url)}
+  alt={user.name}
+  className={styles.avatar}
+/>
 
             <h2 className={styles["user-name"]}>
               {user.name}

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import styles from "../styles/home.module.css";
+import { getImageUrl } from "../utils/getImageUrl";
 
 interface User {
   avatar_url?: string;
@@ -38,11 +39,11 @@ export default function Header({ user }: HeaderProps) {
               onClick={() => navigate("/profile")}
               className={styles.buttonAvatar}
             >
-              <img
-                src={user?.avatar_url || "https://via.placeholder.com/40"}
-                alt="avatar"
-                className={styles.avatar}
-              />
+           <img
+  src={getImageUrl(user?.avatar_url)}
+  alt="avatar"
+  className={styles.avatar}
+/>
               Perfil
             </button>
 
