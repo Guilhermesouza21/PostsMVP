@@ -3,7 +3,6 @@
   import styles from "../styles/login.module.css"; // ✅ Import correto
   import API from "../api"; //api
   
-  
   const LoginPage = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");

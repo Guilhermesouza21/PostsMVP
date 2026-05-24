@@ -25,7 +25,7 @@ const ProfilePage = () => {
   }, [token, navigate]);
 
   // 📥 buscar perfil
-  useEffect(() => {
+  useEffect(() => {s
     const fetchProfile = async () => {
       try {
         const res = await fetch(`${API}/user/profile`, {
