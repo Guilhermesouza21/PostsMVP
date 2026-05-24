@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Header from "../components/header";
-import API from "../api"; //api
+import API from "../api";
 
 interface User {
   id: number;
@@ -29,38 +29,53 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [content, setContent] = useState("");
 
-  // likes — guarda quais posts o usuário curtiu
+  // likes
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
 
-  // comentários — guarda os comentários e qual post está expandido
+  // comentários
   const [comments, setComments] = useState<Record<number, Comment[]>>({});
   const [openComments, setOpenComments] = useState<Set<number>>(new Set());
-  const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
+  const [commentInputs, setCommentInputs] = useState<Record<number, string>>(
+    {}
+  );
 
   const [token] = useState(() => localStorage.getItem("token"));
 
-  
+  const authHeaders = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
 
-
-  // 👤 user profile
+  // 👤 carregar perfil
   useEffect(() => {
     if (!token) return;
+
     fetch(`${API}/user/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
-      .then(res => res.json())
-      .then(data => setUser(data))
-      .catch(err => console.error("Erro user profile:", err));
+      .then((res) => {
+        if (!res.ok) throw new Error("Erro ao carregar perfil");
+        return res.json();
+      })
+      .then((data) => setUser(data))
+      .catch((err) => console.error(err));
   }, [token]);
 
-  // 📌 load posts
+  // 📌 carregar posts
   useEffect(() => {
     loadPosts();
   }, []);
 
   async function loadPosts() {
     try {
-      const res = await fetch("http://localhost:3333/posts");
+      const res = await fetch(`${API}/posts`);
+
+      if (!res.ok) {
+        throw new Error("Erro ao carregar posts");
+      }
+
       const data = await res.json();
       setPosts(data);
     } catch (err) {
@@ -68,157 +83,264 @@ export default function Home() {
     }
   }
 
-  // ✍️ create post
+  // ✍️ criar post
   async function handleCreatePost() {
     if (!content.trim() || !token) return;
 
-    await fetch("http://localhost:3333/posts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ content }),
-    });
+    try {
+      const res = await fetch(`${API}/posts`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ content }),
+      });
 
-    setContent("");
-    loadPosts();
+      if (!res.ok) {
+        throw new Error("Erro ao criar post");
+      }
+
+      setContent("");
+      loadPosts();
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  // 🗑 delete post
+  // 🗑 deletar post
   async function handleDeletePost(id: number) {
     if (!token) return;
 
-    await fetch(`http://localhost:3333/posts/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const confirmDelete = window.confirm(
+      "Deseja realmente deletar este post?"
+    );
 
-    alert("Post deletado com sucesso!");
-    loadPosts();
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`${API}/posts/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Erro ao deletar post");
+      }
+
+      setPosts((prev) => prev.filter((post) => post.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  // ✏️ update post
+  // ✏️ editar post
   async function handleUpdatePost(id: number, oldContent: string) {
     if (!token) return;
 
     const newContent = window.prompt("Editar post:", oldContent);
+
     if (!newContent || !newContent.trim()) return;
 
-    await fetch(`http://localhost:3333/posts/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ content: newContent }),
-    });
+    try {
+      const res = await fetch(`${API}/posts/${id}`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify({ content: newContent }),
+      });
 
-    loadPosts();
+      if (!res.ok) {
+        throw new Error("Erro ao editar post");
+      }
+
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === id ? { ...post, content: newContent } : post
+        )
+      );
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  // ❤️ toggle like
+  // ❤️ curtir/descurtir
   async function handleLike(postId: number) {
     if (!token) return;
 
-    const res = await fetch(`http://localhost:3333/posts/${postId}/like`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    try {
+      const res = await fetch(`${API}/posts/${postId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const data = await res.json();
+      if (!res.ok) {
+        throw new Error("Erro ao curtir post");
+      }
 
-    // atualiza liked localmente
-    setLikedPosts(prev => {
-      const next = new Set(prev);
-      data.liked ? next.add(postId) : next.delete(postId);
-      return next;
-    });
+      const data = await res.json();
 
-    // atualiza contador no post
-    setPosts(prev =>
-      prev.map(p =>
-        p.id === postId
-          ? { ...p, likes_count: p.likes_count + (data.liked ? 1 : -1) }
-          : p
-      )
-    );
+      // atualizar likes locais
+      setLikedPosts((prev) => {
+        const next = new Set(prev);
+
+        if (data.liked) {
+          next.add(postId);
+        } else {
+          next.delete(postId);
+        }
+
+        return next;
+      });
+
+      // atualizar contador
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                likes_count:
+                  post.likes_count + (data.liked ? 1 : -1),
+              }
+            : post
+        )
+      );
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  // 💬 toggle seção de comentários
+  // 💬 abrir comentários
   async function toggleComments(postId: number) {
-    setOpenComments(prev => {
+    setOpenComments((prev) => {
       const next = new Set(prev);
+
       if (next.has(postId)) {
         next.delete(postId);
       } else {
         next.add(postId);
-        loadComments(postId); // carrega ao abrir
+        loadComments(postId);
       }
+
       return next;
     });
   }
 
   // 💬 carregar comentários
   async function loadComments(postId: number) {
-    const res = await fetch(`http://localhost:3333/posts/${postId}/comments`);
-    const data = await res.json();
-    setComments(prev => ({ ...prev, [postId]: data.comments }));
+    try {
+      const res = await fetch(`${API}/posts/${postId}/comments`);
+
+      if (!res.ok) {
+        throw new Error("Erro ao carregar comentários");
+      }
+
+      const data = await res.json();
+
+      setComments((prev) => ({
+        ...prev,
+        [postId]: data.comments,
+      }));
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   // 💬 criar comentário
   async function handleCreateComment(postId: number) {
     const text = commentInputs[postId];
+
     if (!text?.trim() || !token) return;
 
-    await fetch(`http://localhost:3333/posts/${postId}/comments`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ content: text }),
-    });
+    try {
+      const res = await fetch(`${API}/posts/${postId}/comments`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ content: text }),
+      });
 
-    // limpa input e recarrega comentários
-    setCommentInputs(prev => ({ ...prev, [postId]: "" }));
-    loadComments(postId);
+      if (!res.ok) {
+        throw new Error("Erro ao comentar");
+      }
+
+      setCommentInputs((prev) => ({
+        ...prev,
+        [postId]: "",
+      }));
+
+      loadComments(postId);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   // 🗑 deletar comentário
-  async function handleDeleteComment(postId: number, commentId: number) {
+  async function handleDeleteComment(
+    postId: number,
+    commentId: number
+  ) {
     if (!token) return;
 
-    await fetch(`http://localhost:3333/posts/${postId}/comments/${commentId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    try {
+      const res = await fetch(
+        `${API}/posts/${postId}/comments/${commentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    loadComments(postId);
+      if (!res.ok) {
+        throw new Error("Erro ao deletar comentário");
+      }
+
+      loadComments(postId);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  const canEdit = (post: Post) => user?.id === post.user_id;
+  const canEdit = (post: Post) => {
+    return user?.id === post.user_id;
+  };
 
   return (
     <>
       <Header user={user} />
 
       <div style={{ maxWidth: 600, margin: "20px auto" }}>
-
         {/* CREATE POST */}
-        <div style={{ background: "#fff", padding: 15, borderRadius: 10, marginBottom: 20 }}>
+        <div
+          style={{
+            background: "#fff",
+            padding: 15,
+            borderRadius: 10,
+            marginBottom: 20,
+          }}
+        >
           <textarea
             placeholder="O que você está pensando?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            style={{ width: "100%", height: 80, padding: 10 }}
+            style={{
+              width: "100%",
+              height: 80,
+              padding: 10,
+            }}
           />
+
           <button
             onClick={handleCreatePost}
             style={{
-              marginTop: 10, padding: 10,
-              background: "#3c5a99", color: "white",
-              border: "none", borderRadius: 6
+              marginTop: 10,
+              padding: 10,
+              background: "#3c5a99",
+              color: "white",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
             }}
           >
             Postar
@@ -226,59 +348,99 @@ export default function Home() {
         </div>
 
         {/* FEED */}
-        {posts.map(post => (
+        {posts.map((post) => (
           <div
             key={post.id}
-            style={{ background: "#fff", padding: 15, borderRadius: 10, marginBottom: 10 }}
+            style={{
+              background: "#fff",
+              padding: 15,
+              borderRadius: 10,
+              marginBottom: 10,
+            }}
           >
             <strong>{post.name}</strong>
+
             <p>{post.content}</p>
 
-            {/* AÇÕES DO POST */}
-            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
-
+            {/* ações */}
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                alignItems: "center",
+                marginTop: 8,
+              }}
+            >
               {/* LIKE */}
               <button
                 onClick={() => handleLike(post.id)}
                 style={{
                   padding: "5px 12px",
-                  background: likedPosts.has(post.id) ? "#3c5a99" : "#e4e6eb",
-                  color: likedPosts.has(post.id) ? "white" : "#333",
-                  border: "none", borderRadius: 5, cursor: "pointer"
+                  background: likedPosts.has(post.id)
+                    ? "#3c5a99"
+                    : "#e4e6eb",
+                  color: likedPosts.has(post.id)
+                    ? "white"
+                    : "#333",
+                  border: "none",
+                  borderRadius: 5,
+                  cursor: "pointer",
                 }}
               >
-                👍 {post.likes_count > 0 ? post.likes_count : ""} Curtir
+                👍{" "}
+                {post.likes_count > 0
+                  ? post.likes_count
+                  : ""}{" "}
+                Curtir
               </button>
 
-              {/* COMENTAR */}
+              {/* comentar */}
               <button
                 onClick={() => toggleComments(post.id)}
                 style={{
                   padding: "5px 12px",
                   background: "#e4e6eb",
-                  border: "none", borderRadius: 5, cursor: "pointer"
+                  border: "none",
+                  borderRadius: 5,
+                  cursor: "pointer",
                 }}
               >
                 💬 Comentar
               </button>
 
-              {/* EDITAR / DELETAR — só dono */}
+              {/* editar/deletar */}
               {canEdit(post) && (
                 <>
                   <button
-                    onClick={() => handleUpdatePost(post.id, post.content)}
+                    onClick={() =>
+                      handleUpdatePost(
+                        post.id,
+                        post.content
+                      )
+                    }
                     style={{
-                      padding: 5, background: "#f0ad4e",
-                      border: "none", borderRadius: 5, color: "white"
+                      padding: 5,
+                      background: "#f0ad4e",
+                      border: "none",
+                      borderRadius: 5,
+                      color: "white",
+                      cursor: "pointer",
                     }}
                   >
                     Editar
                   </button>
+
                   <button
-                    onClick={() => handleDeletePost(post.id)}
+                    onClick={() =>
+                      handleDeletePost(post.id)
+                    }
                     style={{
-                      padding: 5, background: "#d9534f",
-                      border: "none", borderRadius: 5, color: "white"
+                      padding: 5,
+                      background: "#d9534f",
+                      border: "none",
+                      borderRadius: 5,
+                      color: "white",
+                      cursor: "pointer",
                     }}
                   >
                     Deletar
@@ -287,59 +449,121 @@ export default function Home() {
               )}
             </div>
 
-            {/* SEÇÃO DE COMENTÁRIOS */}
+            {/* comentários */}
             {openComments.has(post.id) && (
-              <div style={{ marginTop: 12, borderTop: "1px solid #eee", paddingTop: 10 }}>
+              <div
+                style={{
+                  marginTop: 12,
+                  borderTop: "1px solid #eee",
+                  paddingTop: 10,
+                }}
+              >
+                {(comments[post.id] ?? []).map(
+                  (comment) => (
+                    <div
+                      key={comment.id}
+                      style={{
+                        display: "flex",
+                        justifyContent:
+                          "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: 8,
+                        background: "#f0f2f5",
+                        borderRadius: 8,
+                        padding: "8px 10px",
+                      }}
+                    >
+                      <div>
+                        <strong
+                          style={{ fontSize: 13 }}
+                        >
+                          {comment.user_name}
+                        </strong>
 
-                {/* lista comentários */}
-                {(comments[post.id] ?? []).map(comment => (
-                  <div
-                    key={comment.id}
-                    style={{
-                      display: "flex", justifyContent: "space-between",
-                      alignItems: "flex-start", marginBottom: 8,
-                      background: "#f0f2f5", borderRadius: 8, padding: "8px 10px"
-                    }}
-                  >
-                    <div>
-                      <strong style={{ fontSize: 13 }}>{comment.user_name}</strong>
-                      <p style={{ margin: "2px 0 0", fontSize: 14 }}>{comment.content}</p>
+                        <p
+                          style={{
+                            margin: "2px 0 0",
+                            fontSize: 14,
+                          }}
+                        >
+                          {comment.content}
+                        </p>
+                      </div>
+
+                      {user?.id ===
+                        comment.user_id && (
+                        <button
+                          onClick={() =>
+                            handleDeleteComment(
+                              post.id,
+                              comment.id
+                            )
+                          }
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "#d9534f",
+                            cursor: "pointer",
+                            fontSize: 16,
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
+                  )
+                )}
 
-                    {/* deletar comentário próprio */}
-                    {user?.id === comment.user_id && (
-                      <button
-                        onClick={() => handleDeleteComment(post.id, comment.id)}
-                        style={{
-                          background: "none", border: "none",
-                          color: "#d9534f", cursor: "pointer", fontSize: 16
-                        }}
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
-
-                {/* input novo comentário */}
-                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                {/* input comentário */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 8,
+                  }}
+                >
                   <input
                     placeholder="Escreva um comentário..."
-                    value={commentInputs[post.id] ?? ""}
-                    onChange={(e) =>
-                      setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))
+                    value={
+                      commentInputs[post.id] ?? ""
                     }
-                    onKeyDown={(e) => e.key === "Enter" && handleCreateComment(post.id)}
+                    onChange={(e) =>
+                      setCommentInputs((prev) => ({
+                        ...prev,
+                        [post.id]:
+                          e.target.value,
+                      }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleCreateComment(
+                          post.id
+                        );
+                      }
+                    }}
                     style={{
-                      flex: 1, padding: "6px 10px",
-                      borderRadius: 20, border: "1px solid #ccc"
+                      flex: 1,
+                      padding: "6px 10px",
+                      borderRadius: 20,
+                      border:
+                        "1px solid #ccc",
                     }}
                   />
+
                   <button
-                    onClick={() => handleCreateComment(post.id)}
+                    onClick={() =>
+                      handleCreateComment(
+                        post.id
+                      )
+                    }
                     style={{
-                      padding: "6px 14px", background: "#3c5a99",
-                      color: "white", border: "none", borderRadius: 20
+                      padding: "6px 14px",
+                      background: "#3c5a99",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 20,
+                      cursor: "pointer",
                     }}
                   >
                     Enviar
@@ -347,10 +571,8 @@ export default function Home() {
                 </div>
               </div>
             )}
-
           </div>
         ))}
-
       </div>
     </>
   );
